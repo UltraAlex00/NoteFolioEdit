@@ -5,6 +5,6 @@ Designed for the TI-83 Plus / Ti-84 Plus (non CE) family. If you are lucky it mi
 
 ![Preview](https://cdn.discordapp.com/attachments/1431750614521479220/1431750702601863178/Screenshot_2025-10-25_214144.png?ex=68fe8d40&is=68fd3bc0&hm=5ce374e48e6959ed595715ed664b33903ffc86cefe4207ffe4d23c190c5eca58)
 
-Running the app might require registering MSCOMCTL.OCX. A .bat is provided to automate this process. 
+Running the app might require registering mscomctl.ocx. A .bat is provided to automate this process. 
 
 More features and improvements will follow soon!
