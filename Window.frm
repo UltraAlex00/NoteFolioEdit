@@ -1,7 +1,7 @@
 VERSION 5.00
 Object = "{831FDD16-0C5C-11D2-A9FC-0000F8754DA1}#2.0#0"; "MSCOMCTL.OCX"
 Begin VB.Form Window 
-   BackColor       =   &H00202020&
+   BackColor       =   &H00272727&
    Caption         =   "NoteFolioEdit"
    ClientHeight    =   9120
    ClientLeft      =   225
@@ -13,6 +13,7 @@ Begin VB.Form Window
    ScaleWidth      =   4935
    StartUpPosition =   3  'Windows-Standard
    Begin VB.CommandButton Command1 
+      BackColor       =   &H00202020&
       Caption         =   "Debug"
       Height          =   375
       Left            =   2160
@@ -106,7 +107,7 @@ Begin VB.Form Window
       Width           =   4455
    End
    Begin VB.Label SavedLabel 
-      BackColor       =   &H00202020&
+      BackColor       =   &H00272727&
       Caption         =   "*Unsaved"
       BeginProperty Font 
          Name            =   "Segoe UI"
@@ -125,7 +126,7 @@ Begin VB.Form Window
       Width           =   1695
    End
    Begin VB.Label Label1 
-      BackColor       =   &H00202020&
+      BackColor       =   &H00272727&
       Caption         =   "Name (8 chars max)"
       BeginProperty Font 
          Name            =   "Segoe UI"
@@ -247,6 +248,11 @@ Private Sub Form_Load()
     AddFontMemResourceEx VarPtr(font(0)), UBound(font) + 1, 0, nFont
     Note.font = "TI-84 Plus Calculator font"
     
+    Saved = True
+    
+    'hMenu = GetMenu(hWnd)
+    'InsertMenu GetSubMenu(hMenu, 0), 1, MF_BYPOSITION Or MF_SEPARATOR, 0, ""
+    
 End Sub
 
 Private Sub Form_Resize()
@@ -269,6 +275,17 @@ Private Sub Menu_File_Open_Click()
     Dim ofn As OPENFILENAME
     Dim path As String
     
+    Dim result As Long
+    
+    If Not Saved Then
+        Beep
+        result = MsgBox("Do you want to save changes to [" & Note_Name.text & "]?", vbYesNoCancel Or vbQuestion)
+        If result = vbCancel Then Exit Sub
+        If result = vbYes Then
+            Menu_File_SaveAs_Click
+        End If
+    End If
+    
     Window.MousePointer = vbHourglass
     
     With ofn
@@ -290,7 +307,6 @@ Private Sub Menu_File_Open_Click()
         Select Case ofn.nFilterIndex
         
             Case 2 'txt
-                'savepromt
                 With document
                     .title = "UNTITLED"
                     .text = ReadFileTxt(path)
@@ -300,22 +316,18 @@ Private Sub Menu_File_Open_Click()
                 End With
                 
             Case 3 '8xv
-                'savepromt
                 document = DOC_Read(path)
                 With document
                     Note_Name.text = .title
                     Note.text = .text
                 End With
         
-        
         End Select
         
         Caption = "NoteFolioEdit - " & Mid$(ofn.lpstrFile, ofn.nFileOffset + 1, lstrlenW(StrPtr(ofn.lpstrFile)))
-        
+        Saved = True
+        SavedLabel.Caption = TEXT_SAVED
     End If
-    
-    Saved = True
-    SavedLabel.Caption = TEXT_SAVED
     
     Window.MousePointer = vbDefault
     
@@ -324,24 +336,23 @@ End Sub
 Private Sub Menu_File_Save_Click()
     
     Window.MousePointer = vbHourglass
-    
-    If editType = 0 Then
-        Menu_File_SaveAs_Click
-    Else
-        Select Case editType
         
-            Case 1 'txt
-                WriteFileTxt edit, Note.text
+    Select Case editType
+        
+        Case 0 'not saved
+            Menu_File_SaveAs_Click
             
-            Case 2 '8xv
+        Case 1 'txt
+            WriteFileTxt edit, Note.text
+        
+        Case 2 '8xv
             With document
                 .title = Note_Name.text
                 .text = Note.text
             End With
             DOC_Write edit, document, Archived
-            
-        End Select
-    End If
+        
+    End Select
     
     Saved = True
     SavedLabel.Caption = TEXT_SAVED
@@ -391,10 +402,9 @@ Private Sub Menu_File_SaveAs_Click()
         
         End Select
         
+        Saved = True
+        SavedLabel.Caption = TEXT_SAVED
     End If
-    
-    Saved = True
-    SavedLabel.Caption = TEXT_SAVED
     
     Window.MousePointer = vbDefault
     
@@ -410,6 +420,7 @@ End Sub
 
 Private Sub Menu_View_CapWidth_Click()
     
+    Window.WindowState = vbNormal
     Window.Width = 5175
     
 End Sub
@@ -484,7 +495,7 @@ Private Sub Note_Name_Change()
     If Len(Note_Name.text) > 8 Then
         Note_Name.ForeColor = vbRed
     Else
-        If Saved And (editType = 2) Then
+        If Saved And (editType <> 1) Then
             SavedLabel.Caption = TEXT_UNSAVED
             Saved = False
         End If
@@ -551,8 +562,6 @@ Private Sub UpdatePos()
     End With
     
 End Sub
-
-
 
 
 
