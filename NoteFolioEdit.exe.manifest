@@ -2,9 +2,9 @@
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
   <assemblyIdentity version="1.0.0.0"
     processorArchitecture="*"
-    name="YourApp"
+    name="NoteFolioEdit"
     type="win32"/>
-  <description>YourApp</description>
+  <description>NoteFolioEdit</description>
   <dependency>
     <dependentAssembly>
       <assemblyIdentity

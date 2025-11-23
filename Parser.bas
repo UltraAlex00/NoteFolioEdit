@@ -184,7 +184,8 @@ Public Function ChecksumI16(bytes() As Byte, Optional ByVal offset As Long = 0, 
         End If
     Next i
     
-    ChecksumI16 = checksum
+    CopyMemory ChecksumI16, checksum, 2
+    
 End Function
 
 
@@ -196,11 +197,14 @@ Private Function TiToStr(chars() As Byte, Optional ByVal offset As Long, Optiona
     If lenght = 0 Then lenght = UBound(chars) + 1
     
     For i = offset To offset + lenght - 1
-        If chars(i) = &HD6 Then
-            TiToStr = TiToStr & vbCrLf
-        Else
-            TiToStr = TiToStr & ChrW$(chars(i))
-        End If
+        
+        Select Case chars(i)
+            
+            Case &HD6: TiToStr = TiToStr & vbCrLf
+            Case &HF1: TiToStr = TiToStr & " "
+            Case Else: TiToStr = TiToStr & ChrW$(chars(i))
+            
+        End Select
     Next i
 
 End Function
@@ -218,10 +222,36 @@ Sub StrToTi(chars() As Byte, ByVal str As String, Optional ByVal existingArray A
     If lenght = 0 Then lenght = Len(str)
     
     If Not existingArray Then ReDim chars(lenght - 1)
-
-    For i = 0 To lenght - 1
-        chars(i + offset) = buffer(i * 2)
-    Next i
+    
+    If translate Then
+        Dim j As Long
+        Dim lastSpace As Long
+        lastSpace = -1
+        
+        For i = 0 To lenght - 1
+            If buffer(i * 2) = &HD6 Then
+                lastSpace = -1
+                j = 0
+            End If
+            If buffer(i * 2) = &H20 Then lastSpace = i
+            If j Mod 16 = 0 Then
+                If lastSpace >= 0 Then
+                    chars(lastSpace + offset) = &HF1
+                    j = 0
+                End If
+            End If
+            
+            chars(i + offset) = buffer(i * 2)
+            
+            j = j + 1
+        Next i
+    Else
+        For i = 0 To lenght - 1
+            chars(i + offset) = buffer(i * 2)
+        Next i
+    End If
+    
+    
     
 End Sub
 
@@ -241,12 +271,6 @@ Public Function TiLen(ByVal text As String) As Long
     
     
 End Function
-
-
-
-
-
-
 
 
 

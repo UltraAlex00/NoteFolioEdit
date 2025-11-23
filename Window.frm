@@ -1,7 +1,7 @@
 VERSION 5.00
 Object = "{831FDD16-0C5C-11D2-A9FC-0000F8754DA1}#2.0#0"; "MSCOMCTL.OCX"
 Begin VB.Form Window 
-   BackColor       =   &H00272727&
+   BackColor       =   &H80000005&
    Caption         =   "NoteFolioEdit"
    ClientHeight    =   9120
    ClientLeft      =   225
@@ -13,7 +13,7 @@ Begin VB.Form Window
    ScaleWidth      =   4935
    StartUpPosition =   3  'Windows-Standard
    Begin VB.CommandButton Command1 
-      BackColor       =   &H00202020&
+      BackColor       =   &H80000005&
       Caption         =   "Debug"
       Height          =   375
       Left            =   2160
@@ -107,7 +107,7 @@ Begin VB.Form Window
       Width           =   4455
    End
    Begin VB.Label SavedLabel 
-      BackColor       =   &H00272727&
+      BackColor       =   &H80000005&
       Caption         =   "*Unsaved"
       BeginProperty Font 
          Name            =   "Segoe UI"
@@ -126,7 +126,7 @@ Begin VB.Form Window
       Width           =   1695
    End
    Begin VB.Label Label1 
-      BackColor       =   &H00272727&
+      BackColor       =   &H80000005&
       Caption         =   "Name (8 chars max)"
       BeginProperty Font 
          Name            =   "Segoe UI"
@@ -164,6 +164,14 @@ Begin VB.Form Window
       Begin VB.Menu Menu_Edit_Archived 
          Caption         =   "Archived"
          Checked         =   -1  'True
+      End
+      Begin VB.Menu separator 
+         Caption         =   "-"
+      End
+      Begin VB.Menu Menu_Edit_DelFile 
+         Caption         =   "Delete File"
+         Enabled         =   0   'False
+         Shortcut        =   +{DEL}
       End
    End
    Begin VB.Menu Menu_View 
@@ -216,11 +224,11 @@ Private Const OFN_HIDEREADONLY = &H4
 
 Dim document As DOC
 
-Dim edit As String
-Dim editType As Long
+Dim edit As String 'contains the path of the file currently editing
+Dim editType As Long '2->.txt 3->.8xv
 
 Dim Archived As Boolean
-Dim Saved As Boolean
+Dim Saved As Boolean 'will be deleted, replaced by editType = 0
 
 Private Const TEXT_SAVED As String = "Saved"
 Private Const TEXT_UNSAVED As String = "*Unsaved"
@@ -228,6 +236,12 @@ Private Const TEXT_UNSAVED As String = "*Unsaved"
 Private Sub Command1_Click()
     
     Dim i As Long
+    
+    With App
+        Print .title
+        Print "v" & .Major & "." & .Minor & "." & .Revision
+    End With
+    
     Note.text = "ASCII table from 0x21 to 0xFF" & vbCrLf
     
     For i = &H21 To &HFF
@@ -251,8 +265,23 @@ Private Sub Form_Load()
     Saved = True
     
     'hMenu = GetMenu(hWnd)
-    'InsertMenu GetSubMenu(hMenu, 0), 1, MF_BYPOSITION Or MF_SEPARATOR, 0, ""
+    'InsertMenu GetSubMenu(hMenu, 0), 1, MF_BYPOSITION Or MF_SEPARATOR, 0, vbNullString
     
+End Sub
+
+Private Sub Form_Unload(Cancel As Integer)
+
+    If Not Saved Then
+        Dim result As Long
+    
+        Beep
+        result = MsgBox("Do you want to save changes to [" & Note_Name.text & "]?", vbYesNoCancel Or vbQuestion)
+        If result = vbCancel Then Cancel = 1
+        If result = vbYes Then
+            Menu_File_Save_Click
+        End If
+    End If
+        
 End Sub
 
 Private Sub Form_Resize()
@@ -282,7 +311,7 @@ Private Sub Menu_File_Open_Click()
         result = MsgBox("Do you want to save changes to [" & Note_Name.text & "]?", vbYesNoCancel Or vbQuestion)
         If result = vbCancel Then Exit Sub
         If result = vbYes Then
-            Menu_File_SaveAs_Click
+            Menu_File_Save_Click
         End If
     End If
     
@@ -324,9 +353,10 @@ Private Sub Menu_File_Open_Click()
         
         End Select
         
-        Caption = "NoteFolioEdit - " & Mid$(ofn.lpstrFile, ofn.nFileOffset + 1, lstrlenW(StrPtr(ofn.lpstrFile)))
+        Caption = App.title & " - " & Mid$(ofn.lpstrFile, ofn.nFileOffset + 1, lstrlenW(StrPtr(ofn.lpstrFile)))
         Saved = True
         SavedLabel.Caption = TEXT_SAVED
+        Menu_Edit_DelFile.Enabled = True
     End If
     
     Window.MousePointer = vbDefault
@@ -344,18 +374,22 @@ Private Sub Menu_File_Save_Click()
             
         Case 1 'txt
             WriteFileTxt edit, Note.text
-        
+            
+            Saved = True
+            SavedLabel.Caption = TEXT_SAVED
+            
         Case 2 '8xv
             With document
                 .title = Note_Name.text
                 .text = Note.text
             End With
             DOC_Write edit, document, Archived
-        
+            
+            Saved = True
+            SavedLabel.Caption = TEXT_SAVED
+            Menu_Edit_DelFile.Enabled = True
+            
     End Select
-    
-    Saved = True
-    SavedLabel.Caption = TEXT_SAVED
     
     Window.MousePointer = vbDefault
     
@@ -388,7 +422,7 @@ Private Sub Menu_File_SaveAs_Click()
         
             Case 1 'txt
                 WriteFileTxt path & ".txt", Note.text
-                Caption = "NoteFolioEdit - " & Mid$(ofn.lpstrFile, ofn.nFileOffset + 1, lstrlenW(StrPtr(ofn.lpstrFile) + (ofn.nFileOffset + 1) * 2) + 1) & ".txt"
+                Caption = App.title & " - " & Mid$(ofn.lpstrFile, ofn.nFileOffset + 1, lstrlenW(StrPtr(ofn.lpstrFile) + (ofn.nFileOffset + 1) * 2) + 1) & ".txt"
                 edit = path & ".txt"
                 
             Case 2 '8xv
@@ -397,7 +431,7 @@ Private Sub Menu_File_SaveAs_Click()
                     .text = Note.text
                 End With
                 DOC_Write path & ".8xv", document, Archived
-                Caption = "NoteFolioEdit - " & Mid$(ofn.lpstrFile, ofn.nFileOffset + 1, lstrlenW(StrPtr(ofn.lpstrFile) + (ofn.nFileOffset + 1) * 2) + 1) & ".8xv"
+                Caption = App.title & " - " & Mid$(ofn.lpstrFile, ofn.nFileOffset + 1, lstrlenW(StrPtr(ofn.lpstrFile) + (ofn.nFileOffset + 1) * 2) + 1) & ".8xv"
                 edit = path & ".8xv"
         
         End Select
@@ -410,11 +444,39 @@ Private Sub Menu_File_SaveAs_Click()
     
 End Sub
 
-
 Private Sub Menu_Edit_Archived_Click()
     
     Menu_Edit_Archived.Checked = Not Menu_Edit_Archived.Checked
     Archived = Menu_Edit_Archived.Checked
+    If Saved And (editType <> 1) Then
+        SavedLabel.Caption = TEXT_UNSAVED
+        Saved = False
+    End If
+    
+End Sub
+
+Private Sub Menu_Edit_DelFile_Click()
+    
+    On Error GoTo ErrorHandler
+    
+    Dim result As Long
+    
+    result = MsgBox("Are you sure you want to permanently delete [" & edit & "]?", vbYesNo Or vbExclamation)
+    
+    If result = vbYes Then
+        Kill edit
+        editType = 0
+        Saved = False
+        SavedLabel.Caption = TEXT_UNSAVED
+        Window.Caption = App.title
+        Menu_Edit_DelFile.Enabled = False
+    End If
+    
+    Exit Sub
+    
+ErrorHandler:
+    MsgBox Err.DESCRIPTION, vbCritical
+    Err.Clear
     
 End Sub
 
